@@ -1,0 +1,17 @@
+# Web framework
+fastapi>=0.100.0
+uvicorn>=0.23.0
+
+# ML / NLP
+transformers>=4.30.0
+torch>=2.0.0
+datasets>=2.14.0
+scikit-learn>=1.3.0
+pandas>=2.0.0
+
+# Tokenizer dependencies
+protobuf>=4.0.0
+sentencepiece>=0.1.99
+
+# Utilities
+python-multipart>=0.0.6
