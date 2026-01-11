@@ -57,11 +57,6 @@ venv\Scripts\activate     # Windows
 pip install -r requirements.txt
 ```
 
-### 4. Download model
-
-Model được lưu trữ riêng do kích thước lớn. Tải về và giải nén vào thư mục `final_model/`:
-
-> 📥 [Download Model](https://your-model-link.com) (hoặc train mới với `training/train.py`)
 
 ## 📊 Huấn luyện model
 
@@ -201,8 +196,8 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ## 👤 Author
 
 **Your Name**
-- GitHub: [@YOUR_USERNAME](https://github.com/YOUR_USERNAME)
-- Email: your.email@example.com
+- GitHub: [qtrong0205](https://github.com/qtrong0205)
+- Email: quoctrong02052006@gmail.com
 
 ---
 
