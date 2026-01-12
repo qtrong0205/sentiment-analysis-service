@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 # Thêm thư mục gốc vào path để import inference module
-ROOT_DIR = Path(__file__).parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 
 from fastapi import FastAPI, HTTPException
@@ -25,7 +25,9 @@ app = FastAPI(
 )
 
 # Load model
-predictor = SentimentPredictor(model_path=str(ROOT_DIR / "final_model"))
+predictor = SentimentPredictor(
+    model_path=str(ROOT_DIR / "final_model")
+)
 
 
 # =====================
