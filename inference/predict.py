@@ -3,6 +3,7 @@ Module load model và predict sentiment
 Dùng cho FastAPI / Backend service
 """
 
+import os
 from transformers import (
     AutoTokenizer,
     AutoModelForSequenceClassification,
@@ -15,6 +16,7 @@ from typing import Optional, List
 # =====================
 
 MODEL_PATH = "../final_model"
+HF_TOKEN = os.environ.get("HF_TOKEN", None)
 
 LABEL_MAP = {
     "LABEL_0": "negative",
@@ -27,24 +29,38 @@ LABEL_MAP = {
 # =====================
 
 class SentimentPredictor:
-    def __init__(self, model_path: str = MODEL_PATH):
-        self.model_path = model_path
+    def __init__(self, model_path: str = None, model_name: str = None):
+        """
+        Khởi tạo predictor
+        - model_path: đường dẫn local tới model
+        - model_name: tên model trên HuggingFace Hub (vd: "username/model-name")
+        """
+        # Ưu tiên model_name (HuggingFace) nếu được cung cấp
+        source = model_name if model_name else (model_path if model_path else MODEL_PATH)
+        local_only = model_name is None and model_path is not None
+        
+        print(f"Loading model from: {source} (local_only={local_only})")
+        if HF_TOKEN:
+            print("Using HF_TOKEN for authentication")
 
         tokenizer = AutoTokenizer.from_pretrained(
-            model_path,
-            local_files_only=True
+            source,
+            local_files_only=local_only,
+            token=HF_TOKEN
         )
 
         model = AutoModelForSequenceClassification.from_pretrained(
-            model_path,
-            local_files_only=True
+            source,
+            local_files_only=local_only,
+            token=HF_TOKEN
         )
 
+        # Sử dụng device=-1 cho CPU (tương thích với Render free tier)
         self.classifier = pipeline(
             task="text-classification",
             model=model,
             tokenizer=tokenizer,
-            device=0  # dùng GPU nếu có, CPU nếu không
+            device=-1  # -1 = CPU, 0 = GPU
         )
 
     @staticmethod

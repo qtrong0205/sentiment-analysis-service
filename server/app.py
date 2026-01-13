@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # =====================
 # PATH SETUP
@@ -16,28 +15,13 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 ROOT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT_DIR.parent))
 
-from inference.predict import SentimentPredictor
-
 MODEL_NAME = os.environ.get(
     "MODEL_NAME",
-    "username/model-name"
+    "qtrong/sentiment-analysis-model"  # Model trên HuggingFace Hub
 )
 
-MODEL_DIR = ROOT_DIR / "final_model"
-
 # =====================
-# DOWNLOAD MODEL IF NEEDED
-# =====================
-
-if not MODEL_DIR.exists():
-    AutoTokenizer.from_pretrained(MODEL_NAME, cache_dir=str(MODEL_DIR))
-    AutoModelForSequenceClassification.from_pretrained(
-        MODEL_NAME,
-        cache_dir=str(MODEL_DIR)
-    )
-
-# =====================
-# APP SETUP
+# APP SETUP - Khởi tạo app TRƯỚC khi load model
 # =====================
 
 app = FastAPI(
@@ -47,11 +31,6 @@ app = FastAPI(
 )
 
 predictor = None
-
-@app.on_event("startup")
-def load_model():
-    global predictor
-    predictor = SentimentPredictor(model_path=str(MODEL_DIR))
 
 # =====================
 # SCHEMAS
@@ -74,10 +53,18 @@ class BatchInput(BaseModel):
 
 @app.get("/")
 def root():
+    """Health check - trả về ngay lập tức"""
     return {"status": "ok", "message": "Sentiment Analysis API is running"}
+
+@app.get("/health")
+def health():
+    """Health check for Render"""
+    return {"status": "healthy"}
 
 @app.post("/predict", response_model=PredictionResult)
 def predict(data: InputText):
+    if predictor is None:
+        raise HTTPException(status_code=503, detail="Model is still loading, please retry in a moment")
     try:
         return predictor.predict(data.text)
     except Exception as e:
@@ -85,10 +72,33 @@ def predict(data: InputText):
 
 @app.post("/predict/batch")
 def predict_batch(data: BatchInput):
+    if predictor is None:
+        raise HTTPException(status_code=503, detail="Model is still loading, please retry in a moment")
     try:
         return {"results": predictor.predict_batch(data.texts)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# =====================
+# LOAD MODEL AFTER STARTUP
+# =====================
+
+@app.on_event("startup")
+async def load_model():
+    """Load model sau khi server đã bind port"""
+    global predictor
+    import asyncio
+    
+    # Delay nhỏ để đảm bảo server đã sẵn sàng
+    await asyncio.sleep(1)
+    
+    print("🔄 Loading model from HuggingFace...")
+    try:
+        from inference.predict import SentimentPredictor
+        predictor = SentimentPredictor(model_name=MODEL_NAME)
+        print("✅ Model loaded successfully!")
+    except Exception as e:
+        print(f"❌ Failed to load model: {e}")
 
 # =====================
 # MAIN
